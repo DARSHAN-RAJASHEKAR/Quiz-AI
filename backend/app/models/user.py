@@ -19,6 +19,7 @@ class User(Base, TimestampMixin):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    refresh_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     quizzes: Mapped[list["Quiz"]] = relationship(  # noqa: F821
         back_populates="user", cascade="all, delete-orphan"

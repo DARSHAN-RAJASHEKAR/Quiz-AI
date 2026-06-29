@@ -33,7 +33,7 @@ export function useSSE({
   const [chunksCompleted, setChunksCompleted] = useState(0)
   const [liveQuestions, setLiveQuestions] = useState<Question[]>([])
 
-  const esRef = useRef<EventSource | null>(null)
+  const ctrlRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     // Always read from localStorage — the Axios refresh interceptor updates
@@ -41,10 +41,10 @@ export function useSSE({
     const accessToken = localStorage.getItem('access_token')
     if (!enabled || !quizId || !accessToken) return
 
-    esRef.current?.close()
+    ctrlRef.current?.abort()
     setLiveQuestions([])
 
-    esRef.current = createJobSSE(quizId, accessToken, {
+    ctrlRef.current = createJobSSE(quizId, accessToken, {
       onStatus: (payload: SSEStatusPayload) => {
         setStatus(payload.status)
         setProgress(payload.progress)
@@ -53,10 +53,10 @@ export function useSSE({
         setChunksCompleted(payload.chunks_completed ?? 0)
 
         if (payload.status === 'completed') {
-          esRef.current?.close()
+          ctrlRef.current?.abort()
           onCompleted?.()
         } else if (payload.status === 'failed') {
-          esRef.current?.close()
+          ctrlRef.current?.abort()
           onFailed?.(payload.message)
         }
       },
@@ -71,12 +71,12 @@ export function useSSE({
       },
 
       onError: (msg) => {
-        esRef.current?.close()
+        ctrlRef.current?.abort()
         onFailed?.(msg)
       },
     })
 
-    return () => esRef.current?.close()
+    return () => ctrlRef.current?.abort()
   }, [quizId, enabled])
 
   return { status, progress, message, chunksTotal, chunksCompleted, liveQuestions }

@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import BaseModel, Field
 
 from app.models.quiz import Difficulty, QuizStatus, QuizType, SourceType
-from app.schemas.question import QuestionResponse
+from app.schemas.question import QuestionPublicResponse
 
 
 class QuizCreateRequest(BaseModel):
@@ -33,7 +33,7 @@ class QuizSummaryResponse(BaseModel):
 
 class QuizDetailResponse(QuizSummaryResponse):
     error_message: str | None = None
-    questions: list[QuestionResponse] = []
+    questions: list[QuestionPublicResponse] = []
 
 
 class QuizListResponse(BaseModel):

@@ -2,10 +2,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Link, useNavigate } from 'react-router-dom'
-import { BrainCircuit } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { Logo } from '../components/ui/Logo'
 import { authApi } from '../api/auth'
 
 const schema = z.object({
@@ -42,24 +42,18 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <BrainCircuit className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">QuizAI</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-gray-900">Create your account</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link to="/login" className="text-blue-600 hover:underline font-medium">
-              Sign in
-            </Link>
-          </p>
+    <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center px-4 py-10">
+      <div className="w-full max-w-[392px]">
+        <div className="flex items-center justify-center gap-2.5 mb-7">
+          <Logo size={28} />
+          <span className="text-[17px] font-semibold tracking-tight text-gray-900">QuizAI</span>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-[0_20px_50px_-30px_rgba(0,0,0,0.2)] p-8">
+          <h1 className="text-[22px] font-semibold tracking-tight text-gray-900 text-center mb-1">Create your account</h1>
+          <p className="text-sm text-gray-500 text-center mb-6">Start turning content into quizzes</p>
+
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <Input
               label="Full name"
               placeholder="Jane Smith"
@@ -92,6 +86,13 @@ export function RegisterPage() {
             </Button>
           </form>
         </div>
+
+        <p className="text-sm text-gray-500 text-center mt-5">
+          Already have an account?{' '}
+          <Link to="/login" className="text-blue-600 hover:underline font-medium">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   )

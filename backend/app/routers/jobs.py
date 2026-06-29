@@ -10,11 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ForbiddenException, NotFoundException
 from app.database import get_db
-from app.dependencies import get_current_user, get_current_user_from_query
+from app.dependencies import get_current_user
 from app.models.question import Question
 from app.models.quiz import Quiz, QuizStatus
 from app.models.user import User
-from app.schemas.question import QuestionResponse
+from app.schemas.question import QuestionPublicResponse
 from app.schemas.quiz import JobStatusResponse
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -53,7 +53,7 @@ async def _sse_generator(quiz_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSessio
         new_questions = [q for q in all_questions if q.id not in sent_question_ids]
 
         if new_questions:
-            payload = [QuestionResponse.model_validate(q).model_dump(mode="json") for q in new_questions]
+            payload = [QuestionPublicResponse.model_validate(q).model_dump(mode="json") for q in new_questions]
             yield f"event: questions\ndata: {json.dumps(payload)}\n\n"
             sent_question_ids.update(q.id for q in new_questions)
 
@@ -102,9 +102,9 @@ async def _sse_generator(quiz_id: uuid.UUID, user_id: uuid.UUID, db: AsyncSessio
 async def job_status_stream(
     quiz_id: str,
     db: Annotated[AsyncSession, Depends(get_db)],
-    current_user: Annotated[User, Depends(get_current_user_from_query)],
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
-    """SSE endpoint — token passed as ?token= query param (EventSource limitation)."""
+    """SSE endpoint — auth via Authorization: Bearer header (uses fetch-event-source)."""
     qid = uuid.UUID(quiz_id)
 
     result = await db.execute(select(Quiz).where(Quiz.id == qid))

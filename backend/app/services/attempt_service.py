@@ -45,6 +45,8 @@ async def submit_attempt(
 
     if quiz is None:
         raise NotFoundException("Quiz not found")
+    if quiz.user_id != user.id:
+        raise ForbiddenException()
     if quiz.status != QuizStatus.completed:
         raise NotFoundException("Quiz is not ready yet")
 

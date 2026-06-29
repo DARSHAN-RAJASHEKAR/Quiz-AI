@@ -29,7 +29,7 @@ async def save_upload(file: UploadFile) -> str:
     """
     # ── 1. Validate content type ────────────────────────────────────────
     content_type = file.content_type or ""
-    if content_type not in ALLOWED_CONTENT_TYPES and not file.filename.endswith(".pdf"):
+    if content_type not in ALLOWED_CONTENT_TYPES:
         raise UnsupportedMediaException()
 
     # ── 2. Validate size ────────────────────────────────────────────────
@@ -37,7 +37,11 @@ async def save_upload(file: UploadFile) -> str:
     if len(contents) > settings.max_upload_size_bytes:
         raise FileTooLargeException(settings.max_upload_size_mb)
 
-    # ── 3. Save to disk ─────────────────────────────────────────────────
+    # ── 3. Verify PDF magic bytes (%PDF-) — prevents MIME-spoofed uploads ──
+    if not contents.startswith(b"%PDF-"):
+        raise UnsupportedMediaException()
+
+    # ── 4. Save to disk ─────────────────────────────────────────────────
     upload_dir = Path(settings.upload_dir)
     upload_dir.mkdir(parents=True, exist_ok=True)
 
@@ -45,7 +49,7 @@ async def save_upload(file: UploadFile) -> str:
     file_path = upload_dir / filename
     file_path.write_bytes(contents)
 
-    # ── 4. Detect scanned / image-based PDF ─────────────────────────────
+    # ── 5. Detect scanned / image-based PDF ─────────────────────────────
     # Sample the first few pages — no need to read the whole file.
     # If none of the sampled pages yield any text, it's almost certainly
     # a scanned PDF and we reject it immediately.

@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     # RabbitMQ
     rabbitmq_url: str = "amqp://quizapp:password@localhost:5672/"
 
-    # JWT
-    secret_key: str = "changeme"
+    # JWT — must be set via SECRET_KEY env var; app will refuse to start without it
+    secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 30

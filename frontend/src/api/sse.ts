@@ -1,3 +1,4 @@
+import { fetchEventSource } from '@microsoft/fetch-event-source'
 import type { Question } from '../types/quiz'
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
@@ -19,39 +20,53 @@ export interface SSECallbacks {
   /** Called every time a new batch of questions arrives from a chunk */
   onQuestions?: (questions: Question[]) => void
   onError?: (msg: string) => void
-  onConnectionError?: (err: Event) => void
+  onConnectionError?: (err: unknown) => void
 }
 
+/**
+ * Open an SSE stream for job status.
+ * Uses fetchEventSource so the Authorization header can be set —
+ * the native EventSource API doesn't support custom headers.
+ *
+ * Returns an AbortController; call .abort() to close the stream.
+ */
 export function createJobSSE(
   quizId: string,
   token: string,
   callbacks: SSECallbacks,
-): EventSource {
-  const url = `${BASE_URL}/api/v1/jobs/${quizId}/status/stream?token=${encodeURIComponent(token)}`
-  const es = new EventSource(url)
+): AbortController {
+  const ctrl = new AbortController()
+  const url = `${BASE_URL}/api/v1/jobs/${quizId}/status/stream`
 
-  es.addEventListener('status', (e: MessageEvent) => {
-    try {
-      callbacks.onStatus?.(JSON.parse(e.data) as SSEStatusPayload)
-    } catch { /* ignore */ }
-  })
+  fetchEventSource(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'text/event-stream',
+    },
+    signal: ctrl.signal,
 
-  es.addEventListener('questions', (e: MessageEvent) => {
-    try {
-      callbacks.onQuestions?.(JSON.parse(e.data) as Question[])
-    } catch { /* ignore */ }
-  })
+    onmessage(ev) {
+      try {
+        if (ev.event === 'status') {
+          callbacks.onStatus?.(JSON.parse(ev.data) as SSEStatusPayload)
+        } else if (ev.event === 'questions') {
+          callbacks.onQuestions?.(JSON.parse(ev.data) as Question[])
+        } else if (ev.event === 'error') {
+          const payload = JSON.parse(ev.data) as SSEStatusPayload
+          callbacks.onError?.(payload.message || 'Generation failed')
+        }
+      } catch { /* ignore parse errors */ }
+    },
 
-  es.addEventListener('error', (e: MessageEvent) => {
-    try {
-      const payload = JSON.parse(e.data) as SSEStatusPayload
-      callbacks.onError?.(payload.message || 'Generation failed')
-    } catch {
-      callbacks.onConnectionError?.(e)
-    }
-  })
+    onerror(err) {
+      callbacks.onConnectionError?.(err)
+      // Don't retry on error — throw so fetchEventSource stops
+      throw err
+    },
 
-  es.onerror = (e) => callbacks.onConnectionError?.(e)
+    // Don't auto-reconnect after the server closes the stream
+    openWhenHidden: true,
+  }).catch(() => { /* stream closed or aborted — expected */ })
 
-  return es
+  return ctrl
 }

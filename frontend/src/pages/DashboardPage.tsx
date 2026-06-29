@@ -28,21 +28,22 @@ export function DashboardPage() {
     onError: () => toast.error('Failed to delete quiz'),
   })
 
+  const total = data?.total ?? 0
+  const firstName = user?.full_name?.split(' ')[0]
+
   return (
     <PageWrapper>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Welcome back, {user?.full_name?.split(' ')[0]} 👋
-          </h1>
-          <p className="text-gray-500 mt-1">
-            {data?.total ?? 0} quiz{data?.total !== 1 ? 'zes' : ''} created
+          <h1 className="text-[26px] font-semibold tracking-[-0.025em] text-gray-900">Your library</h1>
+          <p className="text-sm text-gray-500 mt-1.5">
+            Welcome back{firstName ? `, ${firstName}` : ''} · {total} quiz{total !== 1 ? 'zes' : ''}
           </p>
         </div>
-        <Link to="/quiz/create">
-          <Button size="lg">
-            <PlusCircle className="h-5 w-5 mr-2" />
-            New Quiz
+        <Link to="/quiz/create" className="flex-none">
+          <Button>
+            <PlusCircle className="h-4 w-4 mr-1.5" />
+            New quiz
           </Button>
         </Link>
       </div>
@@ -50,16 +51,20 @@ export function DashboardPage() {
       {isLoading ? (
         <PageSpinner />
       ) : !data?.items.length ? (
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4">🧩</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">No quizzes yet</h3>
-          <p className="text-gray-500 mb-6">Upload a PDF, paste text, or describe a topic to get started.</p>
+        <div className="border border-dashed border-gray-300 rounded-2xl text-center py-20 px-6">
+          <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mx-auto mb-4">
+            <PlusCircle className="h-6 w-6 text-blue-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-1.5">No quizzes yet</h3>
+          <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
+            Upload a PDF, paste text, or describe a topic to generate your first quiz.
+          </p>
           <Link to="/quiz/create">
-            <Button size="lg">Create your first quiz</Button>
+            <Button>Create your first quiz</Button>
           </Link>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {data.items.map((quiz) => (
             <QuizCard key={quiz.id} quiz={quiz} onDelete={(id) => deleteMutation.mutate(id)} />
           ))}

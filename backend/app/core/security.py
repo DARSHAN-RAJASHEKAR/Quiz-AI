@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -35,6 +36,11 @@ def create_refresh_token(subject: str) -> str:
     )
     payload = {"sub": subject, "exp": expire, "type": "refresh"}
     return jwt.encode(payload, settings.secret_key, algorithm=settings.algorithm)
+
+
+def hash_token(token: str) -> str:
+    """SHA-256 hex digest of a token — safe to store in DB."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def decode_token(token: str, token_type: str = "access") -> str:

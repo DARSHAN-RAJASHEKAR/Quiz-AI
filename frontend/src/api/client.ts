@@ -6,6 +6,8 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 export const apiClient: AxiosInstance = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
   headers: { 'Content-Type': 'application/json' },
+  // Include HttpOnly refresh-token cookie on same-origin requests
+  withCredentials: true,
 })
 
 // ── Request interceptor: attach Bearer token ────────────────────────
@@ -17,7 +19,7 @@ apiClient.interceptors.request.use((config) => {
   return config
 })
 
-// ── Response interceptor: handle 401 → refresh or logout ───────────
+// ── Response interceptor: handle 401 → silent refresh or logout ─────
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -25,23 +27,21 @@ apiClient.interceptors.response.use(
 
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
-      const refreshToken = localStorage.getItem('refresh_token')
 
-      if (refreshToken) {
-        try {
-          const { data } = await axios.post(`${BASE_URL}/api/v1/auth/refresh`, {
-            refresh_token: refreshToken,
-          })
-          localStorage.setItem('access_token', data.access_token)
-          original.headers.Authorization = `Bearer ${data.access_token}`
-          return apiClient(original)
-        } catch {
-          // Refresh failed — clear tokens and redirect to login
-          localStorage.removeItem('access_token')
-          localStorage.removeItem('refresh_token')
-          window.location.href = '/login'
-        }
-      } else {
+      try {
+        // Refresh token is in the HttpOnly cookie — no body needed.
+        // withCredentials ensures the cookie is sent.
+        const { data } = await axios.post(
+          `${BASE_URL}/api/v1/auth/refresh`,
+          {},
+          { withCredentials: true },
+        )
+        localStorage.setItem('access_token', data.access_token)
+        original.headers.Authorization = `Bearer ${data.access_token}`
+        return apiClient(original)
+      } catch {
+        // Refresh failed — cookie expired or revoked; send to login
+        localStorage.removeItem('access_token')
         window.location.href = '/login'
       }
     }
