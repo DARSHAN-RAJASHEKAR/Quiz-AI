@@ -32,3 +32,6 @@ uploads/*
 # IDE
 .vscode/
 .idea/
+
+# Local notes
+TODO.md
